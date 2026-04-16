@@ -85,3 +85,9 @@ Na raiz do projeto:
 cd ejb-module
 mvn clean test
 ```
+
+Na raiz do projeto:
+```bash
+cd frontend
+npm test
+```
