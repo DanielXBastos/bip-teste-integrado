@@ -1,0 +1,258 @@
+<div class="page-shell">
+  <section class="hero">
+    <div class="hero-text">
+      <span class="eyebrow">Painel administrativo</span>
+      <h1>Gestão de Benefícios</h1>
+      <p>
+        Cadastre benefícios, acompanhe o saldo disponível e realize
+        transferências entre registros de forma simples.
+      </p>
+    </div>
+  </section>
+
+  <mat-progress-bar *ngIf="loading" mode="indeterminate"></mat-progress-bar>
+
+  <section class="stats-grid">
+    <mat-card class="stat-card">
+      <div class="stat-label">Total de benefícios</div>
+      <div class="stat-value">{{ beneficios.length }}</div>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <div class="stat-label">Ativos</div>
+      <div class="stat-value success">{{ ativos }}</div>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <div class="stat-label">Inativos</div>
+      <div class="stat-value danger">{{ inativos }}</div>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <div class="stat-label">Valor total</div>
+      <div class="stat-value">
+        {{ valorTotal | currency: "BRL" : "symbol" : "1.2-2" }}
+      </div>
+    </mat-card>
+  </section>
+
+  <section class="content-grid">
+    <div class="left-column">
+      <mat-card class="panel-card">
+        <div class="panel-header">
+          <div>
+            <h2>{{ editandoId ? "Editar benefício" : "Novo benefício" }}</h2>
+            <p>
+              {{
+                editandoId
+                  ? "Atualize os dados do benefício selecionado."
+                  : "Cadastre um novo benefício administrativo."
+              }}
+            </p>
+          </div>
+          <mat-icon>{{ editandoId ? "edit" : "add_circle" }}</mat-icon>
+        </div>
+        <mat-divider></mat-divider>
+
+        <div class="panel-body form-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Nome</mat-label>
+            <input
+              matInput
+              [(ngModel)]="novo.nome"
+              maxlength="100"
+              #nomeModel="ngModel"
+            />
+            <mat-hint align="end">{{ (novo.nome || "").length }}/100</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Descrição</mat-label>
+            <textarea
+              matInput
+              rows="3"
+              [(ngModel)]="novo.descricao"
+              maxlength="255"
+            >
+            </textarea>
+            <mat-hint align="end"
+              >{{ (novo.descricao || "").length }}/255</mat-hint
+            >
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Valor</mat-label>
+            <input
+              matInput
+              type="text"
+              [ngModel]="novoValorInput"
+              (ngModelChange)="onValorChange($event)"
+              placeholder="R$ 0,00"
+              maxlength="23"
+            />
+          </mat-form-field>
+
+          <div class="toggle-row">
+            <mat-slide-toggle [(ngModel)]="novo.ativo"
+              >Benefício ativo</mat-slide-toggle
+            >
+          </div>
+
+          <div class="form-actions">
+            <button
+              mat-raised-button
+              color="primary"
+              class="full-width"
+              (click)="salvar()"
+            >
+              {{ editandoId ? "Atualizar benefício" : "Salvar benefício" }}
+            </button>
+
+            <button
+              *ngIf="editandoId"
+              mat-stroked-button
+              color="basic"
+              class="full-width"
+              (click)="cancelarEdicao()"
+            >
+              Cancelar edição
+            </button>
+          </div>
+        </div>
+      </mat-card>
+
+      <mat-card class="panel-card">
+        <div class="panel-header">
+          <div>
+            <h2>Transferência</h2>
+            <p>Transfira valor entre benefícios já cadastrados.</p>
+          </div>
+          <mat-icon>swap_horiz</mat-icon>
+        </div>
+
+        <mat-divider></mat-divider>
+
+        <div class="panel-body form-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Origem</mat-label>
+            <mat-select
+              [(ngModel)]="transferencia.fromId"
+              (selectionChange)="onFromChange($event.value)"
+            >
+              <mat-option
+                *ngFor="let b of beneficios"
+                [value]="b.id"
+                [disabled]="!b.ativo"
+              >
+                {{ b.nome }}
+                <span *ngIf="!b.ativo"> (inativo)</span>
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Destino</mat-label>
+            <mat-select
+              [(ngModel)]="transferencia.toId"
+              (selectionChange)="onToChange($event.value)"
+            >
+              <mat-option
+                *ngFor="let b of beneficios"
+                [value]="b.id"
+                [disabled]="!b.ativo"
+              >
+                {{ b.nome }}
+                <span *ngIf="!b.ativo"> (inativo)</span>
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Valor da transferência</mat-label>
+            <input
+              matInput
+              type="text"
+              [ngModel]="transferenciaValorInput"
+              (ngModelChange)="onTransferenciaValorChange($event)"
+              placeholder="R$ 0,00"
+              maxlength="23"
+            />
+          </mat-form-field>
+
+          <button
+            mat-stroked-button
+            color="primary"
+            class="full-width"
+            (click)="transferir()"
+          >
+            Transferir valor
+          </button>
+        </div>
+      </mat-card>
+    </div>
+
+    <div class="right-column">
+      <mat-card class="panel-card">
+        <div class="panel-header">
+          <div>
+            <h2>Benefícios cadastrados</h2>
+            <p>Resumo dos registros disponíveis no sistema.</p>
+          </div>
+          <mat-icon>inventory_2</mat-icon>
+        </div>
+
+        <mat-divider></mat-divider>
+
+        <div
+          class="beneficios-list"
+          *ngIf="beneficios.length > 0; else emptyState"
+        >
+          <div class="beneficio-item" *ngFor="let b of beneficios">
+            <div class="beneficio-top">
+              <div>
+                <h3>{{ b.nome }}</h3>
+                <p>{{ b.descricao }}</p>
+              </div>
+
+              <span
+                class="status-chip"
+                [ngClass]="b.ativo ? 'status-active' : 'status-inactive'"
+              >
+                {{ b.ativo ? "Ativo" : "Inativo" }}
+              </span>
+            </div>
+
+            <div class="beneficio-bottom">
+              <span class="id-label">ID #{{ b.id }}</span>
+              <strong>{{
+                b.valor | currency: "BRL" : "symbol" : "1.2-2"
+              }}</strong>
+            </div>
+
+            <div class="beneficio-actions">
+              <button mat-stroked-button color="primary" (click)="editar(b)">
+                Editar
+              </button>
+
+              <button
+                mat-stroked-button
+                color="warn"
+                [disabled]="!b.ativo"
+                (click)="excluir(b.id)"
+              >
+                Inativar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #emptyState>
+          <div class="empty-state">
+            <mat-icon>inbox</mat-icon>
+            <p>Nenhum benefício cadastrado até o momento.</p>
+          </div>
+        </ng-template>
+      </mat-card>
+    </div>
+  </section>
+</div>
